@@ -1,8 +1,11 @@
 package service;
 
+import builder.ContextBuilder;
+
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 public class DeepSeekService {
 
@@ -131,6 +134,56 @@ public class DeepSeekService {
                 "- Добавь обработку ошибок\n" +
                 "- Верни только код в формате ```java ... ```";
         return sendMessage(prompt, "deepseek-chat");
+    }
+
+    /**
+     * Анализ архитектуры проекта
+     */
+    public String analyzeArchitecture(String structure) {
+        String prompt = "Проанализируй структуру этого Java-проекта:\n" + structure + "\n\n" +
+                "Оцени:\n" +
+                "1. Какая архитектура используется (MVC, layered, и т.д.)?\n" +
+                "2. Есть ли проблемы в организации пакетов?\n" +
+                "3. Соответствует ли структура best practices?\n" +
+                "4. Какие улучшения можно предложить?\n\n" +
+                "Ответь структурированно, на русском языке.";
+        return sendMessage(prompt, "deepseek-chat");
+    }
+
+    /**
+     * Поиск проблем в коде (code smells) по всем файлам
+     */
+    public String findCodeSmells(List<String> files, ContextBuilder context) {
+        StringBuilder allCode = new StringBuilder();
+        int filesLoaded = 0;
+
+        for (String fileName : files) {
+            try {
+                String code = context.readFileContent(fileName);
+                allCode.append("Файл: ").append(fileName).append("\n");
+                allCode.append("```java\n").append(code).append("\n```\n\n");
+                filesLoaded++;
+
+                // Ограничиваем размер запроса (DeepSeek имеет ограничение)
+                if (allCode.length() > 15000) {
+                    allCode.append("\n... (показано ").append(filesLoaded).append(" из ").append(files.size()).append(" файлов)");
+                    break;
+                }
+            } catch (Exception e) {
+                allCode.append("❌ Не удалось прочитать файл: ").append(fileName).append("\n");
+            }
+        }
+
+        String prompt = "Проанализируй код и найди:\n" +
+                "1. Code smells (проблемы в коде)\n" +
+                "2. Нарушения принципов SOLID\n" +
+                "3. Потенциальные баги\n" +
+                "4. Проблемы с производительностью\n" +
+                "5. Риски безопасности\n\n" +
+                "Код:\n" + allCode.toString() + "\n\n" +
+                "Для каждой проблемы укажи: файл, описание, рекомендацию по исправлению.";
+
+        return sendMessage(prompt, "deepseek-coder");
     }
 
     private String buildJsonRequest(String message, String model) {
