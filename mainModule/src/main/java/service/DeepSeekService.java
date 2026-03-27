@@ -94,6 +94,45 @@ public class DeepSeekService {
         }
     }
 
+    /**
+     * Исправление ошибок в коде
+     */
+    public String fixCode(String code, String className) {
+        String prompt = "Ты опытный Java-разработчик. Найди и исправь ошибки в этом коде.\n" +
+                "Класс: " + className + "\n" +
+                "```java\n" + code + "\n```\n\n" +
+                "Верни только исправленный код целиком в формате ```java ... ```";
+        return sendMessage(prompt, "deepseek-coder");
+    }
+
+    /**
+     * Детальный анализ кода
+     */
+    public String deepAnalyze(String code, String className) {
+        String prompt = "Проведи детальный анализ Java-класса " + className + ":\n" +
+                "1. Качество кода (читаемость, стиль)\n" +
+                "2. Потенциальные баги (NPE, исключения, race conditions)\n" +
+                "3. Нарушения SOLID\n" +
+                "4. Проблемы производительности\n" +
+                "5. Риски безопасности\n" +
+                "6. Что можно улучшить\n\n" +
+                "Код:\n```java\n" + code + "\n```";
+        return sendMessage(prompt, "deepseek-coder");
+    }
+
+    /**
+     * Создание нового класса по описанию
+     */
+    public String createClass(String description) {
+        String prompt = "Создай Java-класс по описанию:\n" + description + "\n\n" +
+                "Требования:\n" +
+                "- Используй Java 17\n" +
+                "- Добавь Javadoc для класса и публичных методов\n" +
+                "- Добавь обработку ошибок\n" +
+                "- Верни только код в формате ```java ... ```";
+        return sendMessage(prompt, "deepseek-chat");
+    }
+
     private String buildJsonRequest(String message, String model) {
         String escapedMessage = escapeJson(message);
         return "{"

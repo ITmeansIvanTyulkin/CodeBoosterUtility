@@ -1,114 +1,61 @@
 import builder.ContextBuilder;
 import service.DeepSeekService;
+import java.io.IOException;
+import java.nio.file.*;
 import java.util.Scanner;
+import java.util.List;
+import java.util.regex.*;
 
 public class Main {
 
-    private static final String DEEPSEEK_TOKEN = "";
+    private static final String DEEPSEEK_TOKEN = System.getenv("DEEPSEEK_API_KEY");
     private static final String PROXY_HOST = "18.199.183.77";
     private static final int PROXY_PORT = 49232;
     private static final boolean USE_PROXY = false;
 
     private static DeepSeekService deepSeek;
     private static ContextBuilder context;
+    private static Path projectPath;
 
     public static void main(String[] args) {
 
         // ========== ПОЛУЧАЕМ ПУТЬ К ПРОЕКТУ ==========
-        String projectPath;
-
         if (args.length > 0) {
-            projectPath = args[0];
+            projectPath = Paths.get(args[0]);
             System.out.println("📁 Анализируем проект: " + projectPath);
         } else {
             System.out.print("📁 Введите путь к проекту: ");
             Scanner pathScanner = new Scanner(System.in);
-            projectPath = pathScanner.nextLine().trim();
-
-            if (projectPath.isEmpty()) {
-                projectPath = System.getProperty("user.dir");
-                System.out.println("📁 Используем текущую директорию: " + projectPath);
-            }
+            String path = pathScanner.nextLine().trim();
+            projectPath = path.isEmpty() ? Paths.get(System.getProperty("user.dir")) : Paths.get(path);
+            System.out.println("📁 Используем: " + projectPath);
         }
         // ============================================
 
         // Инициализация DeepSeek
         if (USE_PROXY) {
             deepSeek = new DeepSeekService(DEEPSEEK_TOKEN, PROXY_HOST, PROXY_PORT);
-            System.out.println("✅ DeepSeek готов");
         } else {
             deepSeek = new DeepSeekService(DEEPSEEK_TOKEN);
-            System.out.println("✅ DeepSeek готов");
         }
+        System.out.println("✅ DeepSeek готов");
 
-        // Инициализация контекста проекта
-        context = new ContextBuilder(projectPath);
+        // Инициализация контекста
+        context = new ContextBuilder(projectPath.toString());
 
         System.out.println("\n=== 🤖 DeepSeek AI Assistant ===");
         System.out.println("📁 Проект: " + projectPath);
         System.out.println("----------------------------------------");
-
-        // ========== АВТОМАТИЧЕСКИЙ АНАЛИЗ ПРОЕКТА ==========
-        System.out.println("\n🔍 Запускаю автоматический анализ проекта...\n");
-
-        try {
-            // 1. Показываем структуру проекта
-            System.out.println("📁 СТРУКТУРА ПРОЕКТА:");
-            String structure = context.getFullContext();
-            System.out.println(structure);
-
-            // 2. Получаем список всех Java-файлов
-            var allFiles = context.getAllJavaFiles();
-            System.out.println("\n📄 НАЙДЕНО ФАЙЛОВ: " + allFiles.size());
-
-            if (allFiles.isEmpty()) {
-                System.out.println("⚠️ Java-файлы не найдены. Убедитесь, что путь указан верно.");
-            } else {
-                // 3. Анализируем первые несколько файлов (чтобы не перегружать API)
-                System.out.println("\n🔬 АНАЛИЗ КОДА (первые 3 файла):");
-                int analyzedCount = 0;
-                for (String fileInfo : allFiles) {
-                    if (analyzedCount >= 3) break;
-
-                    String fileName = fileInfo.split(":")[0];
-                    System.out.println("\n--- Анализ: " + fileName + " ---");
-
-                    // Получаем код файла
-                    String code = context.readFileContent(fileName);
-
-                    // Запрашиваем у DeepSeek анализ кода
-                    String analysis = analyzeCode(fileName, code);
-                    System.out.println(analysis);
-
-                    analyzedCount++;
-                }
-
-                if (allFiles.size() > 3) {
-                    System.out.println("\n... и ещё " + (allFiles.size() - 3) + " файлов.");
-                    System.out.println("Используйте /analyze-all для полного анализа.");
-                }
-            }
-
-            // 4. Общий анализ архитектуры
-            System.out.println("\n🏗️ ОБЩИЙ АНАЛИЗ АРХИТЕКТУРЫ:");
-            String architectureAnalysis = analyzeArchitecture(structure);
-            System.out.println(architectureAnalysis);
-
-        } catch (Exception e) {
-            System.out.println("❌ Ошибка при анализе: " + e.getMessage());
-        }
-        // ====================================================
-
-        // Интерактивный режим
-        System.out.println("\n----------------------------------------");
-        System.out.println("💡 Теперь можно задавать вопросы или использовать команды:");
-        System.out.println("  /load <класс>     - загрузить класс в контекст");
-        System.out.println("  /analyze-all      - проанализировать все файлы");
-        System.out.println("  /analyze <файл>   - проанализировать конкретный файл");
-        System.out.println("  /find-smells      - найти проблемы в коде");
-        System.out.println("  /structure        - показать структуру проекта");
-        System.out.println("  /clear            - очистить контекст");
-        System.out.println("  /exit             - выход");
+        System.out.println("💡 Команды:");
+        System.out.println("  /load <класс>        - загрузить класс в контекст");
+        System.out.println("  /test <класс>        - сгенерировать и сохранить JUnit тесты");
+        System.out.println("  /fix <класс>         - найти и исправить ошибки в классе");
+        System.out.println("  /refactor <класс>    - предложить и применить рефакторинг");
+        System.out.println("  /create <описание>   - создать новый класс");
+        System.out.println("  /analyze <класс>     - детальный анализ кода");
+        System.out.println("  /structure           - показать структуру проекта");
+        System.out.println("  /clear               - очистить контекст");
+        System.out.println("  /exit                - выход");
         System.out.println("----------------------------------------");
 
         Scanner scanner = new Scanner(System.in);
@@ -123,27 +70,7 @@ public class Main {
             }
 
             if (input.equalsIgnoreCase("/structure")) {
-                try {
-                    System.out.println(context.getFullContext());
-                } catch (Exception e) {
-                    System.out.println("❌ " + e.getMessage());
-                }
-                continue;
-            }
-
-            if (input.equalsIgnoreCase("/analyze-all")) {
-                analyzeAllFiles();
-                continue;
-            }
-
-            if (input.startsWith("/analyze ")) {
-                String fileName = input.substring(9).trim();
-                analyzeSpecificFile(fileName);
-                continue;
-            }
-
-            if (input.equalsIgnoreCase("/find-smells")) {
-                findCodeSmells();
+                showStructure();
                 continue;
             }
 
@@ -155,84 +82,86 @@ public class Main {
 
             if (input.startsWith("/load ")) {
                 String className = input.substring(6).trim();
-                try {
-                    context.addClassToContext(className);
-                    System.out.println("✅ Загружен: " + className);
-                } catch (Exception e) {
-                    System.out.println("❌ " + e.getMessage());
-                }
+                loadClass(className);
+                continue;
+            }
+
+            if (input.startsWith("/test ")) {
+                String className = input.substring(6).trim();
+                generateAndSaveTests(className);
+                continue;
+            }
+
+            if (input.startsWith("/fix ")) {
+                String className = input.substring(5).trim();
+                fixCode(className);
+                continue;
+            }
+
+            if (input.startsWith("/refactor ")) {
+                String className = input.substring(10).trim();
+                refactorCode(className);
+                continue;
+            }
+
+            if (input.startsWith("/create ")) {
+                String description = input.substring(8).trim();
+                createNewClass(description);
+                continue;
+            }
+
+            if (input.startsWith("/analyze ")) {
+                String className = input.substring(9).trim();
+                analyzeClass(className);
                 continue;
             }
 
             if (!input.trim().isEmpty()) {
-                try {
-                    String prompt = buildPrompt(input);
-                    System.out.print("🤖 DeepSeek: ");
-                    String response = deepSeek.sendMessage(prompt);
-                    System.out.println(response);
-                } catch (Exception e) {
-                    System.out.println("❌ " + e.getMessage());
-                }
+                // Обычный вопрос
+                askQuestion(input);
             }
         }
 
         scanner.close();
     }
 
-    /**
-     * Анализ конкретного файла
-     */
-    private static String analyzeCode(String fileName, String code) {
-        String prompt = "Проанализируй этот Java-код. Укажи:\n" +
-                "1. Что делает этот класс/метод?\n" +
-                "2. Есть ли потенциальные проблемы (null safety, исключения, производительность)?\n" +
-                "3. Что можно улучшить?\n" +
-                "4. Соответствует ли код Java-стилю?\n\n" +
-                "Файл: " + fileName + "\n```java\n" + code + "\n```";
-
-        String response = deepSeek.sendMessage(prompt);
-        System.out.println(response);  // печатаем
-        return response;               // и возвращаем
-    }
+    // ========== НОВЫЕ ФУНКЦИИ ==========
 
     /**
-     * Анализ архитектуры проекта
+     * Генерация и сохранение тестов
      */
-    private static String analyzeArchitecture(String structure) {
-        String prompt = "Проанализируй структуру этого Java-проекта:\n" + structure + "\n\n" +
-                "Ответь на вопросы:\n" +
-                "1. Какая архитектура используется (MVC, layered, и т.д.)?\n" +
-                "2. Есть ли проблемы в организации пакетов?\n" +
-                "3. Какие паттерны проектирования можно применить?\n" +
-                "4. Общие рекомендации по улучшению структуры.";
-
-        return deepSeek.sendMessage(prompt);
-    }
-
-    /**
-     * Анализ всех файлов проекта
-     */
-    private static void analyzeAllFiles() {
+    private static void generateAndSaveTests(String className) {
         try {
-            var allFiles = context.getAllJavaFiles();
-            System.out.println("\n🔍 Анализирую " + allFiles.size() + " файлов...\n");
+            System.out.println("🔍 Загружаю класс " + className + "...");
+            context.addClassToContext(className);
+            String code = context.readFileContent(findClassFile(className));
 
-            for (String fileInfo : allFiles) {
-                String fileName = fileInfo.split(":")[0];
-                System.out.println("\n📄 === " + fileName + " ===");
+            System.out.println("🤖 Генерирую тесты...");
+            String tests = deepSeek.generateTests(className, code);
 
-                String code = context.readFileContent(fileName);
-                analyzeCode(fileName, code);
+            // Извлекаем код из ответа (между ```java и ```)
+            String testCode = extractCode(tests);
 
-                // Небольшая задержка, чтобы не забивать API
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+            // Определяем путь для сохранения теста
+            Path testPath = getTestPath(className);
+
+            System.out.println("\n📝 Сгенерированные тесты:");
+            System.out.println("---");
+            System.out.println(testCode);
+            System.out.println("---");
+
+            System.out.print("\n💾 Сохранить тесты в " + testPath + "? (y/n): ");
+            Scanner scanner = new Scanner(System.in);
+            String answer = scanner.nextLine();
+
+            if (answer.equalsIgnoreCase("y")) {
+                // Создаём директорию, если её нет
+                Files.createDirectories(testPath.getParent());
+                Files.writeString(testPath, testCode);
+                System.out.println("✅ Тесты сохранены в " + testPath);
+            } else {
+                System.out.println("❌ Сохранение отменено");
             }
-
-            System.out.println("\n✅ Анализ всех файлов завершён!");
 
         } catch (Exception e) {
             System.out.println("❌ Ошибка: " + e.getMessage());
@@ -240,53 +169,238 @@ public class Main {
     }
 
     /**
-     * Анализ конкретного файла по имени
+     * Исправление ошибок в коде
      */
-    private static void analyzeSpecificFile(String fileName) {
+    private static void fixCode(String className) {
         try {
-            String code = context.readFileContent(fileName);
-            System.out.println("\n🔍 Анализ файла: " + fileName);
-            analyzeCode(fileName, code);
+            System.out.println("🔍 Загружаю класс " + className + "...");
+            context.addClassToContext(className);
+            String code = context.readFileContent(findClassFile(className));
+
+            System.out.println("🤖 Анализирую и исправляю ошибки...");
+            String fixedCode = deepSeek.fixCode(code, className);
+
+            // Извлекаем исправленный код
+            String newCode = extractCode(fixedCode);
+
+            System.out.println("\n📝 Исправленный код:");
+            System.out.println("---");
+            System.out.println(newCode);
+            System.out.println("---");
+
+            Path filePath = projectPath.resolve(findClassFile(className));
+            System.out.print("\n💾 Применить изменения к " + filePath + "? (y/n): ");
+            Scanner scanner = new Scanner(System.in);
+            String answer = scanner.nextLine();
+
+            if (answer.equalsIgnoreCase("y")) {
+                // Создаём бэкап
+                Path backupPath = filePath.resolveSibling(filePath.getFileName() + ".backup");
+                Files.copy(filePath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+                System.out.println("📦 Бэкап сохранён: " + backupPath);
+
+                // Сохраняем исправленный код
+                Files.writeString(filePath, newCode);
+                System.out.println("✅ Код обновлён!");
+            } else {
+                System.out.println("❌ Изменения отменены");
+            }
+
         } catch (Exception e) {
-            System.out.println("❌ Файл не найден: " + fileName);
-            System.out.println("Используйте /structure чтобы увидеть список файлов");
+            System.out.println("❌ Ошибка: " + e.getMessage());
         }
     }
 
     /**
-     * Поиск проблем в коде (code smells)
+     * Рефакторинг кода
      */
-    private static void findCodeSmells() {
+    private static void refactorCode(String className) {
         try {
-            var allFiles = context.getAllJavaFiles();
-            System.out.println("\n🔍 Ищу потенциальные проблемы в коде...\n");
+            System.out.println("🔍 Загружаю класс " + className + "...");
+            context.addClassToContext(className);
+            String code = context.readFileContent(findClassFile(className));
 
-            StringBuilder allCode = new StringBuilder();
-            for (String fileInfo : allFiles) {
-                String fileName = fileInfo.split(":")[0];
-                String code = context.readFileContent(fileName);
-                allCode.append("Файл: ").append(fileName).append("\n");
-                allCode.append("```java\n").append(code).append("\n```\n\n");
+            System.out.println("🤖 Предлагаю рефакторинг...");
+            String refactored = deepSeek.suggestRefactoring(code);
 
-                // Ограничиваем размер запроса
-                if (allCode.length() > 10000) break;
+            String newCode = extractCode(refactored);
+
+            System.out.println("\n📝 Предлагаемый рефакторинг:");
+            System.out.println("---");
+            System.out.println(newCode);
+            System.out.println("---");
+
+            Path filePath = projectPath.resolve(findClassFile(className));
+            System.out.print("\n💾 Применить рефакторинг к " + filePath + "? (y/n): ");
+            Scanner scanner = new Scanner(System.in);
+            String answer = scanner.nextLine();
+
+            if (answer.equalsIgnoreCase("y")) {
+                Path backupPath = filePath.resolveSibling(filePath.getFileName() + ".refactor.backup");
+                Files.copy(filePath, backupPath, StandardCopyOption.REPLACE_EXISTING);
+                Files.writeString(filePath, newCode);
+                System.out.println("✅ Рефакторинг применён! Бэкап: " + backupPath);
+            } else {
+                System.out.println("❌ Рефакторинг отменён");
             }
 
-            String prompt = "Проанализируй этот Java-код и найди:\n" +
-                    "1. Code smells (проблемы в коде)\n" +
-                    "2. Нарушения принципов SOLID\n" +
-                    "3. Потенциальные баги\n" +
-                    "4. Проблемы с производительностью\n" +
-                    "5. Риски безопасности\n\n" +
-                    "Код:\n" + allCode.toString();
+        } catch (Exception e) {
+            System.out.println("❌ Ошибка: " + e.getMessage());
+        }
+    }
 
-            System.out.print("🤖 DeepSeek анализирует...\n");
+    /**
+     * Создание нового класса
+     */
+    private static void createNewClass(String description) {
+        try {
+            System.out.println("🤖 Создаю класс по описанию: " + description);
+            String newClass = deepSeek.createClass(description);
+
+            String code = extractCode(newClass);
+
+            // Пытаемся определить имя класса
+            String className = extractClassName(code);
+            if (className == null) {
+                className = "NewClass";
+            }
+
+            // Определяем путь для сохранения
+            Path classPath = getMainPath(className);
+
+            System.out.println("\n📝 Сгенерированный класс:");
+            System.out.println("---");
+            System.out.println(code);
+            System.out.println("---");
+
+            System.out.print("\n💾 Сохранить в " + classPath + "? (y/n): ");
+            Scanner scanner = new Scanner(System.in);
+            String answer = scanner.nextLine();
+
+            if (answer.equalsIgnoreCase("y")) {
+                Files.createDirectories(classPath.getParent());
+                Files.writeString(classPath, code);
+                System.out.println("✅ Класс сохранён в " + classPath);
+            } else {
+                System.out.println("❌ Сохранение отменено");
+            }
+
+        } catch (Exception e) {
+            System.out.println("❌ Ошибка: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Детальный анализ класса
+     */
+    private static void analyzeClass(String className) {
+        try {
+            System.out.println("🔍 Загружаю класс " + className + "...");
+            context.addClassToContext(className);
+            String code = context.readFileContent(findClassFile(className));
+
+            System.out.println("🤖 Провожу детальный анализ...");
+            String analysis = deepSeek.deepAnalyze(code, className);
+            System.out.println(analysis);
+
+        } catch (Exception e) {
+            System.out.println("❌ Ошибка: " + e.getMessage());
+        }
+    }
+
+    // ========== ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ==========
+
+    private static void showStructure() {
+        try {
+            System.out.println(context.getFullContext());
+        } catch (Exception e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private static void loadClass(String className) {
+        try {
+            context.addClassToContext(className);
+            System.out.println("✅ Загружен: " + className);
+        } catch (Exception e) {
+            System.out.println("❌ " + e.getMessage());
+        }
+    }
+
+    private static void askQuestion(String question) {
+        try {
+            String prompt = buildPrompt(question);
+            System.out.print("🤖 DeepSeek: ");
             String response = deepSeek.sendMessage(prompt);
             System.out.println(response);
-
         } catch (Exception e) {
-            System.out.println("❌ Ошибка: " + e.getMessage());
+            System.out.println("❌ " + e.getMessage());
         }
+    }
+
+    private static String findClassFile(String className) throws IOException {
+        var allFiles = context.getAllJavaFiles();
+        for (String file : allFiles) {
+            if (file.endsWith(className + ".java")) {
+                return file;
+            }
+        }
+        throw new IOException("Класс " + className + " не найден");
+    }
+
+    private static Path getTestPath(String className) {
+        String packagePath = getPackagePath(className);
+        String testFileName = className + "Test.java";
+
+        Path testPath = projectPath.resolve("src/test/java")
+                .resolve(packagePath.replace('.', '/'))
+                .resolve(testFileName);
+
+        return testPath;
+    }
+
+    private static Path getMainPath(String className) {
+        String testFileName = className + ".java";
+        return projectPath.resolve("src/main/java").resolve(testFileName);
+    }
+
+    private static String getPackagePath(String className) {
+        // Простая эвристика: ищем package в файле
+        try {
+            String filePath = findClassFile(className);
+            return filePath.replace("/", ".").replace(".java", "");
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private static String extractCode(String response) {
+        // Ищем блок кода между ```java и ```
+        Pattern pattern = Pattern.compile("```java\\s*(.*?)\\s*```", Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(response);
+
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+
+        // Если не нашли, пробуем без указания языка
+        Pattern pattern2 = Pattern.compile("```\\s*(.*?)\\s*```", Pattern.DOTALL);
+        Matcher matcher2 = pattern2.matcher(response);
+
+        if (matcher2.find()) {
+            return matcher2.group(1).trim();
+        }
+
+        return response;
+    }
+
+    private static String extractClassName(String code) {
+        Pattern pattern = Pattern.compile("class\\s+(\\w+)");
+        Matcher matcher = pattern.matcher(code);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
     }
 
     private static String buildPrompt(String question) {
