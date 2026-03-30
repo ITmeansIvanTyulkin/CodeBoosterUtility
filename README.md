@@ -112,7 +112,6 @@ deepseek-chat / deepseek-coder
 
 ### 1. Клонировать репозиторий
 
-```bash
 git clone https://github.com/ITmeansIvanTyulkin/CodeBoosterUtility.git
 cd CodeBoosterUtility
 
@@ -125,8 +124,8 @@ export DEEPSEEK_API_KEY="sk-ваш_ключ_от_deepseek"
 echo 'export DEEPSEEK_API_KEY="sk-ваш_ключ_от_deepseek"' >> ~/.zshrc
 source ~/.zshrc
 
-Настройка
-Получение API ключа DeepSeek
+## Настройка
+### 2. Получение API ключа DeepSeek
 
 Зарегистрируйтесь на platform.deepseek.com
 Перейдите в раздел API Keys
@@ -139,8 +138,8 @@ private static final String PROXY_HOST = "ваш_прокси_хост";
 private static final int PROXY_PORT = 8080;
 private static final boolean USE_PROXY = true;
 
-Использование
-Запуск
+## Использование
+### 3. Запуск
 java -jar target/CodeBoosterUtility-1.0-SNAPSHOT.jar /path/to/your/project
 Или без аргументов — программа спросит путь:
 java -jar target/CodeBoosterUtility-1.0-SNAPSHOT.jar
@@ -152,7 +151,7 @@ alias ai-helper='java -jar ~/MEGA/Work/CodeBoosterUtility/mainModule/target/Code
 После перезагрузки терминала:
 ai-helper ~/my-project
 
-Команды
+## Команды
 
 Команда	                            Описание	                        Пример
 /structure	                        Показать структуру проекта          /structure
@@ -168,7 +167,7 @@ ai-helper ~/my-project
 /clear	                            Очистить контекст	                /clear
 /exit	                            Выйти из программы	                /exit
 
-Примеры
+## Примеры
 
 Пример 1: Анализ требования
 🤔 Вы: /analyze-requirement "Реализовать метод findUser, который возвращает пользователя по ID. Если пользователь не найден, возвращать Optional.empty()."
@@ -246,7 +245,7 @@ src/main/java/com/example/
 
 ✅ АНАЛИЗ ПРОЕКТА ЗАВЕРШЁН!
 
-Структура проекта
+## Структура проекта
 CodeBoosterUtility/
 ├── mainModule/
 │   ├── pom.xml
@@ -264,8 +263,7 @@ CodeBoosterUtility/
 ├── LICENSE
 └── README.md
 
-Планы по развитию
-
+## Планы по развитию
 Jira интеграция — автоматическая загрузка задач по ID
 GitHub Actions — автоматический анализ при создании PR
 Визуализация — веб-интерфейс для отчётов
@@ -273,16 +271,13 @@ GitHub Actions — автоматический анализ при создан
 Интеграция с IntelliJ IDEA — плагин для IDE
 Поддержка локальных моделей — Ollama, LM Studio
 
-Лицензия
-
+## Лицензия
 MIT License. См. файл LICENSE для подробностей.
 
-Автор
-
+## Автор
 Ivan Tyulkin
 AQA Java Engineer
 GitHub: @ITmeansIvanTyulkin
 
-Звезда проекту
-
+## Звезда проекту
 Если вам понравился проект, поставьте звезду на GitHub!
