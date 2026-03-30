@@ -64,6 +64,8 @@ public class Main {
         System.out.println("  /analyze <класс>     - детальный анализ конкретного класса");
         System.out.println("  /analyze-project     - полный анализ всего проекта");
         System.out.println("  /structure           - показать структуру проекта");
+        System.out.println("  /analyze-task <файл> - анализ задачи из файла");
+        System.out.println("  /analyze-requirement <текст> - анализ произвольного требования");
         System.out.println("  /clear               - очистить контекст");
         System.out.println("  /exit                - выход");
         System.out.println("----------------------------------------");
@@ -128,6 +130,19 @@ public class Main {
 
             if (input.equalsIgnoreCase("/analyze-project")) {
                 analyzeProject();
+                continue;
+            }
+
+            // ========== НОВЫЕ КОМАНДЫ ДЛЯ АНАЛИЗА ЗАДАЧ ==========
+            if (input.startsWith("/analyze-task ")) {
+                String taskPath = input.substring(14).trim();
+                analyzeTaskFromFile(taskPath);
+                continue;
+            }
+
+            if (input.startsWith("/analyze-requirement ")) {
+                String requirement = input.substring(21).trim();
+                analyzeRequirement(requirement);
                 continue;
             }
 
@@ -508,5 +523,84 @@ public class Main {
             return question;
         }
         return "Вот код из моего проекта:\n\n" + currentContext + "\n\nМой вопрос: " + question;
+    }
+
+    // ========== МЕТОДЫ ДЛЯ АНАЛИЗА ЗАДАЧ ==========
+
+    /**
+     * Анализ задачи из текстового файла
+     */
+    private static void analyzeTaskFromFile(String filePath) {
+        try {
+            Path taskFile = Paths.get(filePath);
+            if (!Files.exists(taskFile)) {
+                System.out.println("❌ Файл не найден: " + filePath);
+                return;
+            }
+
+            String taskDescription = Files.readString(taskFile);
+            System.out.println("\n📄 Загружена задача из файла:");
+            System.out.println("---");
+            // Показываем первые 200 символов
+            String preview = taskDescription.length() > 200 ?
+                    taskDescription.substring(0, 200) + "..." : taskDescription;
+            System.out.println(preview);
+            System.out.println("---\n");
+
+            analyzeRequirement(taskDescription);
+
+        } catch (Exception e) {
+            System.out.println("❌ Ошибка чтения файла: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Анализ соответствия кода произвольному требованию
+     */
+    private static void analyzeRequirement(String requirement) {
+        try {
+            System.out.println("🔍 Анализирую соответствие кода требованию...\n");
+
+            // Получаем список всех Java-файлов
+            List<String> allFiles = context.getAllJavaFiles();
+
+            if (allFiles.isEmpty()) {
+                System.out.println("⚠️ Java-файлы не найдены");
+                return;
+            }
+
+            // Собираем код проекта для анализа
+            StringBuilder projectCode = new StringBuilder();
+            int filesLoaded = 0;
+
+            System.out.println("📁 Загружаю файлы проекта...");
+            for (String fileName : allFiles) {
+                try {
+                    String code = context.readFileContent(fileName);
+                    projectCode.append("=== ").append(fileName).append(" ===\n");
+                    projectCode.append("```java\n").append(code).append("\n```\n\n");
+                    filesLoaded++;
+
+                    // Ограничиваем размер для API (чтобы не превысить лимит)
+                    if (projectCode.length() > 20000) {
+                        projectCode.append("\n... (показано ").append(filesLoaded)
+                                .append(" из ").append(allFiles.size()).append(" файлов)");
+                        break;
+                    }
+                } catch (Exception e) {
+                    projectCode.append("❌ Ошибка чтения: ").append(fileName).append("\n");
+                }
+            }
+
+            System.out.println("✅ Загружено " + filesLoaded + " файлов\n");
+            System.out.println("🤖 DeepSeek анализирует соответствие...\n");
+
+            String analysis = deepSeek.analyzeCompliance(requirement, projectCode.toString());
+            System.out.println(analysis);
+
+        } catch (Exception e) {
+            System.out.println("❌ Ошибка: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
