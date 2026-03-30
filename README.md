@@ -152,20 +152,22 @@ alias ai-helper='java -jar ~/MEGA/Work/CodeBoosterUtility/mainModule/target/Code
 ai-helper ~/my-project
 
 ## Команды
+## Команды
 
-Команда	                            Описание	                        Пример
-/structure	                        Показать структуру проекта          /structure
-/load <класс>	                    Загрузить класс в контекст	        /load UserService
-/analyze <класс>	                Детальный анализ класса	            /analyze UserService
-/analyze-project	                Полный анализ всего проекта	        /analyze-project
-/analyze-task <файл>	            Анализ задачи из текстового файла	/analyze-task task.txt
-/analyze-requirement <текст>	    Анализ произвольного требования	    /analyze-requirement "Добавить метод"
-/test <класс>	                    Сгенерировать JUnit тесты	        /test UserService
-/fix <класс>	                    Исправить ошибки в классе	        /fix UserService
-/refactor <класс>	                Предложить рефакторинг	            /refactor UserService
-/create <описание>	                Создать новый класс	                /create класс для работы с пользователями
-/clear	                            Очистить контекст	                /clear
-/exit	                            Выйти из программы	                /exit
+| Команда                          | Описание                            | Пример |
+|----------------------------------|-------------------------------------|--------|
+| `/structure`                     | Показать структуру проекта          | `/structure` |
+| `/load <класс>`                  | Загрузить класс в контекст          | `/load UserService` |
+| `/analyze <класс>`               | Детальный анализ класса             | `/analyze UserService` |
+| `/analyze-project`               | Полный анализ всего проекта         | `/analyze-project` |
+| `/analyze-task <файл>`           | Анализ задачи из текстового файла   | `/analyze-task task.txt` |
+| `/analyze-requirement <текст>`   | Анализ произвольного требования     | `/analyze-requirement "Добавить метод"` |
+| `/test <класс>`                  | Сгенерировать JUnit тесты           | `/test UserService` |
+| `/fix <класс>`                   | Исправить ошибки в классе           | `/fix UserService` |
+| `/refactor <класс>`              | Предложить рефакторинг              | `/refactor UserService` |
+| `/create <описание>`             | Создать новый класс                 | `/create класс для работы с пользователями` |
+| `/clear`                         | Очистить контекст                   | `/clear` |
+| `/exit`                          | Выйти из программы                  | `/exit` |
 
 ## Примеры
 
