@@ -248,6 +248,7 @@ src/main/java/com/example/
 ✅ АНАЛИЗ ПРОЕКТА ЗАВЕРШЁН!
 
 ## Структура проекта
+```
 CodeBoosterUtility/
 ├── mainModule/
 │   ├── pom.xml
@@ -264,6 +265,7 @@ CodeBoosterUtility/
 ├── .gitignore
 ├── LICENSE
 └── README.md
+```
 
 ## Планы по развитию
 Jira интеграция — автоматическая загрузка задач по ID
